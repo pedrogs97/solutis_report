@@ -1,0 +1,29 @@
+version: "3.8"
+
+services:
+  solutis-report:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: solutis-report
+    ports:
+      - "8002:8002"
+    volumes:
+      - ./src:/app/src
+      - ./logs:/app/logs
+      - ./.env:/app/.env
+    env_file:
+      - ./.env
+    restart: always
+    networks:
+      - agile-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8002/docs')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  agile-network:
+    external: true
