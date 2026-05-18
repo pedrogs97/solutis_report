@@ -7,19 +7,16 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.9"]
+        python-version: ["3.13"]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install pipenv pylint
-          pipenv requirements > requirements.txt
-          pip install --no-cache-dir --upgrade -r requirements.txt
+          python -m pip install --upgrade pip uv
+          uv sync
       - name: Analysing the code with pylint
-        run: |
-          pylint src --rcfile=.pylintrc --ignore=manage.py,config,migrations,tests
+        run: uv run pylint src --rcfile=.pylintrc --ignore=tests
