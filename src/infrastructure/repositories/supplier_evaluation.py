@@ -39,14 +39,24 @@ class SupplierEvaluationRepository(
         """Applies filters to the report data."""
         query = super().apply_filters(model, query, filters)
 
-        if isinstance(model, Supplier) and (supplier_name := filters.supplier_name):
+        if model is Supplier and (supplier_name := filters.supplier_name):
             query = query.where(Supplier.trade_name.icontains(supplier_name))
 
-        if isinstance(model, SupplierEvaluation) and (
+        if model is SupplierEvaluation and (
             evaluator_name := filters.evaluator_name
         ):
             query = query.where(
                 SupplierEvaluation.evaluator_name.icontains(evaluator_name)
+            )
+
+        if model is SupplierEvaluation and filters.start_period:
+            query = query.where(
+                SupplierEvaluation.evaluation_date >= filters.start_period
+            )
+
+        if model is SupplierEvaluation and filters.end_period:
+            query = query.where(
+                SupplierEvaluation.evaluation_date <= filters.end_period
             )
 
         return query

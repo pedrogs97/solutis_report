@@ -9,6 +9,24 @@ from openpyxl.styles import Alignment, Font
 from core.abstracts.excel_generator import AbstractExcelGenerator
 
 
+def format_date_br(value: Any) -> str:
+    """Format ISO date/date-like values as dd/mm/yyyy."""
+    if not value:
+        return ""
+
+    value_str = str(value)
+    if "/" in value_str:
+        return value_str
+
+    date_part = value_str.split("T")[0]
+    parts = date_part.split("-")
+    if len(parts) != 3:
+        return value_str
+
+    year, month, day = parts
+    return f"{day}/{month}/{year}"
+
+
 class SupplierEvaluationExcelGenerator(AbstractExcelGenerator):
     """Supplier evaluation excel generator."""
 
@@ -55,7 +73,7 @@ class SupplierEvaluationExcelGenerator(AbstractExcelGenerator):
                     row_data.get("period", ""),
                     row_data.get("evaluation_year", ""),
                     row_data.get("evaluator_name", ""),
-                    row_data.get("evaluation_date", ""),
+                    format_date_br(row_data.get("evaluation_date")),
                 ]
             )
 

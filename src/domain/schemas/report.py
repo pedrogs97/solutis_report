@@ -22,6 +22,7 @@ class ReportFilterBase(CamelBaseModel):
 class SupplierEvaluationFilters(ReportFilterBase):
     """Specific filters for supplier evaluation report."""
 
+    supplier_id: Optional[int] = None
     supplier_name: Optional[str] = None
     tax_id: Optional[str] = None
     evaluation_year: Optional[int] = None
