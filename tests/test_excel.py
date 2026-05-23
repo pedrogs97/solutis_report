@@ -45,5 +45,5 @@ def test_generate_excel():
         "1º Quadrimestre",
         2024,
         "João Silva",
-        "2024-05-16",
+        "16/05/2024",
     ]

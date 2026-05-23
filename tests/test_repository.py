@@ -53,7 +53,7 @@ async def test_fetch_report_data_quadrimester(mock_session):
     assert response.trade_name == "Test Supplier"
     assert response.final_score == "95.5"
     assert response.period == "1º Quadrimestre"
-    assert response.evaluation_date == "2024-05-16"
+    assert response.evaluation_date == "16/05/2024"
 
 
 @pytest.mark.asyncio
@@ -89,7 +89,7 @@ async def test_fetch_report_data_semester(mock_session):
     assert len(data) == 1
     response = data[0]
     assert response.period == "2º Semestre"
-    assert response.evaluation_date is None
+    assert response.evaluation_date == ""
 
 
 @pytest.mark.asyncio

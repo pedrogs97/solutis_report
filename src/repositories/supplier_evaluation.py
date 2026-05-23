@@ -6,6 +6,7 @@ from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from core.schemas import BaseModel
+from core.utils.functions import format_date_br
 from models.supplier import Supplier
 from models.supplier_evaluation import SupplierEvaluation
 from repositories.base import AbstractReportRepository, ModelT, Select
@@ -103,7 +104,7 @@ class SupplierEvaluationRepository(
                     period=period_label,
                     evaluation_year=eval_obj.evaluation_year,
                     evaluator_name=eval_obj.evaluator_name,
-                    evaluation_date=(
+                    evaluation_date=format_date_br(
                         eval_obj.evaluation_date.isoformat()
                         if eval_obj.evaluation_date
                         else None
