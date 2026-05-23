@@ -4,10 +4,10 @@ from typing import Any, Dict, List
 import pytest
 from pydantic import BaseModel
 
-from application.report_service import ReportService
-from core.abstracts.excel_generator import AbstractExcelGenerator
-from core.abstracts.report_repository import AbstractReportRepository
-from domain.cache import ReportCache
+from repositories.base import AbstractReportRepository
+from services.cache import InMemoryReportCache
+from services.excel_generator import AbstractExcelGenerator
+from services.report_service import ReportService
 
 
 class DummyResponse(BaseModel):
@@ -32,24 +32,23 @@ class MockExcelGenerator(AbstractExcelGenerator):
 
 
 @pytest.fixture
-def service():
+def cache():
+    return InMemoryReportCache()
+
+
+@pytest.fixture
+def service(cache):
     repo = MockRepository()
     excel_gen = MockExcelGenerator()
-    return ReportService(repo, excel_gen)
+    return ReportService(repo, excel_gen, cache)
 
 
-@pytest.fixture(autouse=True)
-def clear_cache():
-    ReportCache.clear_all()
-    yield
-
-
-from domain.schemas.report import SupplierEvaluationFilters
-from domain.enums.report import ReportType
+from models.enums import ReportType
+from schemas.report import SupplierEvaluationFilters
 
 
 @pytest.mark.asyncio
-async def test_generate_report(service):
+async def test_generate_report(service, cache):
     filters = SupplierEvaluationFilters(report_type=ReportType.SUPPLIER_EVALUATION)
     cache_key, total = await service.generate_report("test_report", filters)
 
@@ -57,15 +56,15 @@ async def test_generate_report(service):
     assert cache_key is not None
 
     # Verifica se salvou no cache
-    cached_data = ReportCache.get("test_report", filters)
+    cached_data = cache.get("test_report", filters)
     assert cached_data == [{"id": 1, "name": "Test"}]
 
 
 @pytest.mark.asyncio
-async def test_get_paginated_report_from_cache(service):
+async def test_get_paginated_report_from_cache(service, cache):
     filters = SupplierEvaluationFilters(report_type=ReportType.SUPPLIER_EVALUATION)
     # Insere no cache primeiro
-    ReportCache.set("test_report", filters, [{"id": i} for i in range(15)])
+    cache.set("test_report", filters, [{"id": i} for i in range(15)])
 
     cache_key, total, paginated_data = await service.get_paginated_report(
         "test_report", filters, limit=10, offset=0
@@ -92,9 +91,9 @@ async def test_get_paginated_report_fallback_db(service):
 
 
 @pytest.mark.asyncio
-async def test_download_excel_from_cache(service):
+async def test_download_excel_from_cache(service, cache):
     filters = SupplierEvaluationFilters(report_type=ReportType.SUPPLIER_EVALUATION)
-    ReportCache.set("test_report", filters, [{"id": 1, "name": "Test"}])
+    cache.set("test_report", filters, [{"id": 1, "name": "Test"}])
 
     excel_bytes = await service.download_excel("test_report", filters)
     assert excel_bytes.read() == b"dummy excel data"

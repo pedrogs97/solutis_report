@@ -4,11 +4,11 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from domain.enums.report import ReportType
-from domain.models.supplier import Supplier
-from domain.models.supplier_evaluation import SupplierEvaluation
-from domain.schemas.report import SupplierEvaluationFilters
-from infrastructure.repositories.supplier_evaluation import SupplierEvaluationRepository
+from models.enums import ReportType
+from models.supplier import Supplier
+from models.supplier_evaluation import SupplierEvaluation
+from repositories.supplier_evaluation import SupplierEvaluationRepository
+from schemas.report import SupplierEvaluationFilters
 
 
 @pytest.fixture
@@ -31,15 +31,12 @@ async def test_fetch_report_data_quadrimester(mock_session):
         evaluation_year=2024,
         evaluator_name="João",
         evaluation_date=date(2024, 5, 16),
-        score_quality=Decimal("100"),
-        score_delivery=Decimal("90"),
-        score_commercial=Decimal("95"),
     )
     supplier_obj = Supplier(
         id=1,
         trade_name="Test Supplier",
         tax_id="12345678901234",
-        company_name="Test Supplier LTDA",
+        legal_name="Test Supplier LTDA",
     )
 
     # Session returns a list of tuples (SupplierEvaluation, Supplier)
@@ -73,15 +70,12 @@ async def test_fetch_report_data_semester(mock_session):
         evaluation_year=2023,
         evaluator_name="Maria",
         evaluation_date=None,
-        score_quality=Decimal("80"),
-        score_delivery=Decimal("80"),
-        score_commercial=Decimal("80"),
     )
     supplier_obj = Supplier(
         id=2,
         trade_name="Another Supplier",
         tax_id="09876543210987",
-        company_name="Another Supplier SA",
+        legal_name="Another Supplier SA",
     )
 
     mock_result.all.return_value = [(eval_obj, supplier_obj)]
@@ -96,3 +90,49 @@ async def test_fetch_report_data_semester(mock_session):
     response = data[0]
     assert response.period == "2º Semestre"
     assert response.evaluation_date is None
+
+
+@pytest.mark.asyncio
+async def test_fetch_report_data_with_filters(mock_session):
+    mock_result = MagicMock()
+    eval_obj = SupplierEvaluation(
+        id=1,
+        supplier_id=1,
+        period_type="QUADRIMESTER",
+        period_number=1,
+        final_score=Decimal("95.5"),
+        evaluation_year=2024,
+        evaluator_name="João",
+        evaluation_date=date(2024, 5, 16),
+    )
+    supplier_obj = Supplier(
+        id=1,
+        trade_name="Test Supplier",
+        tax_id="12345678901234",
+        legal_name="Test Supplier LTDA",
+    )
+    mock_result.all.return_value = [(eval_obj, supplier_obj)]
+    mock_session.exec.return_value = mock_result
+
+    repo = SupplierEvaluationRepository(mock_session)
+    filters = SupplierEvaluationFilters(
+        report_type=ReportType.SUPPLIER_EVALUATION,
+        supplier_name="Test Supplier",
+        evaluator_name="João",
+        start_period=date(2024, 1, 1),
+        end_period=date(2024, 12, 31),
+    )
+
+    data = await repo.fetch_report_data(filters)
+    assert len(data) == 1
+
+    # Verify that mock_session.exec was called
+    mock_session.exec.assert_called_once()
+    called_query = mock_session.exec.call_args[0][0]
+
+    # Convert query to string to check if the filters were applied in the SQL
+    query_sql = str(called_query)
+    assert "supplier.trade_name" in query_sql
+    assert "supplier_evaluation.evaluator_name" in query_sql
+    assert "supplier_evaluation.evaluation_date >=" in query_sql
+    assert "supplier_evaluation.evaluation_date <=" in query_sql

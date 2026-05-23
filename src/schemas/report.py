@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional, Union
 from pydantic import Field
 
 from core.schemas import CamelBaseModel
-from domain.enums.report import ReportType
+from models.enums import ReportType
 
 
 class ReportFilterBase(CamelBaseModel):

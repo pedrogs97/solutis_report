@@ -1,6 +1,6 @@
 import openpyxl
 
-from infrastructure.excel.supplier_evaluation import SupplierEvaluationExcelGenerator
+from services.excel import SupplierEvaluationExcelGenerator
 
 
 def test_generate_excel():

@@ -3,18 +3,15 @@ from unittest.mock import MagicMock
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from application.report_service import ReportService
-from domain.cache import ReportCache
+from api.v1.depends.report import get_report_cache, get_report_service
 from main import appAPI
+from services.report_service import ReportService
 
 
 @pytest.fixture(autouse=True)
 def clear_cache():
-    ReportCache.clear_all()
+    get_report_cache().clear_all()
     yield
-
-
-from api.v1.depends.report import get_report_service
 
 
 @pytest.fixture

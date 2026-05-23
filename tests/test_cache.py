@@ -2,18 +2,18 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from domain.cache import ReportCache
-from domain.enums.report import ReportType
-from domain.schemas.report import SupplierEvaluationFilters
+from models.enums import ReportType
+from schemas.report import SupplierEvaluationFilters
+from services.cache import InMemoryReportCache
 
 
-@pytest.fixture(autouse=True)
-def clear_cache():
-    ReportCache.clear_all()
-    yield
+@pytest.fixture
+def cache():
+    """Returns a fresh instance of InMemoryReportCache for each test."""
+    return InMemoryReportCache()
 
 
-def test_cachegenerate_key():
+def test_cache_generate_key(cache):
     filters1 = SupplierEvaluationFilters(
         report_type=ReportType.SUPPLIER_EVALUATION,
         evaluation_year=2024,
@@ -30,48 +30,48 @@ def test_cachegenerate_key():
         period_type="A",
     )
 
-    key1 = ReportCache.generate_key("supplier", filters1)
-    key2 = ReportCache.generate_key("supplier", filters2)
-    key3 = ReportCache.generate_key("supplier", filters3)
+    key1 = cache.generate_key("supplier", filters1)
+    key2 = cache.generate_key("supplier", filters2)
+    key3 = cache.generate_key("supplier", filters3)
 
     assert key1 == key2  # A ordem dos dicionários não deve importar
     assert key1 != key3  # Valores diferentes devem gerar hashes diferentes
 
 
-def test_cache_set_and_get():
+def test_cache_set_and_get(cache):
     filters = SupplierEvaluationFilters(
         report_type=ReportType.SUPPLIER_EVALUATION, evaluation_year=2024
     )
     data = [{"id": 1, "name": "Supplier A"}]
 
-    cache_key = ReportCache.set("supplier", filters, data)
+    cache_key = cache.set("supplier", filters, data)
     assert cache_key is not None
 
-    cached_data = ReportCache.get("supplier", filters)
+    cached_data = cache.get("supplier", filters)
     assert cached_data == data
 
 
-def test_cache_get_non_existent():
+def test_cache_get_non_existent(cache):
     filters = SupplierEvaluationFilters(
         report_type=ReportType.SUPPLIER_EVALUATION, evaluation_year=2099
     )
-    cached_data = ReportCache.get("supplier", filters)
+    cached_data = cache.get("supplier", filters)
     assert cached_data is None
 
 
-def test_cache_expiration():
+def test_cache_expiration(cache):
     filters = SupplierEvaluationFilters(
         report_type=ReportType.SUPPLIER_EVALUATION, evaluation_year=2024
     )
     data = [{"id": 1, "name": "Supplier A"}]
 
-    ReportCache.set("supplier", filters, data)
+    cache.set("supplier", filters, data)
 
     # Modificar o expires_at manualmente para simular expiração
-    cache_key = ReportCache.generate_key("supplier", filters)
-    entry = ReportCache._cache_store[cache_key]
+    cache_key = cache.generate_key("supplier", filters)
+    entry = cache._cache_store[cache_key]
     entry.expires_at = datetime.now(timezone.utc) - timedelta(minutes=1)
 
-    cached_data = ReportCache.get("supplier", filters)
+    cached_data = cache.get("supplier", filters)
     assert cached_data is None
-    assert cache_key not in ReportCache._cache_store
+    assert cache_key not in cache._cache_store

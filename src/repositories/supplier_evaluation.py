@@ -5,11 +5,11 @@ from typing import List, Optional
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from core.abstracts.report_repository import AbstractReportRepository, ModelT, Select
 from core.schemas import BaseModel
-from domain.models.supplier import Supplier
-from domain.models.supplier_evaluation import SupplierEvaluation
-from domain.schemas.report import SupplierEvaluationFilters
+from models.supplier import Supplier
+from models.supplier_evaluation import SupplierEvaluation
+from repositories.base import AbstractReportRepository, ModelT, Select
+from schemas.report import SupplierEvaluationFilters
 
 
 class SupplierEvaluationResponse(BaseModel):
@@ -39,15 +39,22 @@ class SupplierEvaluationRepository(
         """Applies filters to the report data."""
         query = super().apply_filters(model, query, filters)
 
-        if model is Supplier and (supplier_name := filters.supplier_name):
+        if issubclass(model, Supplier) and (supplier_name := filters.supplier_name):
             query = query.where(Supplier.trade_name.icontains(supplier_name))
 
-        if model is SupplierEvaluation and (
-            evaluator_name := filters.evaluator_name
-        ):
-            query = query.where(
-                SupplierEvaluation.evaluator_name.icontains(evaluator_name)
-            )
+        if issubclass(model, SupplierEvaluation):
+            if evaluator_name := filters.evaluator_name:
+                query = query.where(
+                    SupplierEvaluation.evaluator_name.icontains(evaluator_name)
+                )
+            if filters.start_period:
+                query = query.where(
+                    SupplierEvaluation.evaluation_date >= filters.start_period
+                )
+            if filters.end_period:
+                query = query.where(
+                    SupplierEvaluation.evaluation_date <= filters.end_period
+                )
 
         if model is SupplierEvaluation and filters.start_period:
             query = query.where(

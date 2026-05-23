@@ -1,42 +1,59 @@
-FROM python:3.13-slim-bookworm
+# Stage 1: Build dependencies
+FROM python:3.13-slim-bookworm AS builder
 
-# Set environment variables
-ENV PYTHONUNBUFFERED=1
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONPATH="/app/src"
+WORKDIR /solutis-report
 
-# Install uv
+# Install uv for fast dependency management
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-# Set working directory
-WORKDIR /app
+# Copy configuration files for dependency restoration
+COPY pyproject.toml uv.lock ./
 
-# Install locales
-RUN apt-get update -y \
-    && apt-get install -y locales \
+# Install python dependencies using uv (creates /solutis-report/.venv)
+RUN uv sync --frozen --no-install-project --no-dev
+
+
+# Stage 2: Final runner image
+FROM python:3.13-slim-bookworm AS runner
+
+# Configure environment variables
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PATH="/solutis-report/.venv/bin:/opt/mssql-tools17/bin:$PATH" \
+    PYTHONPATH="/solutis-report/src:/solutis-report" \
+    XDG_RUNTIME_DIR="/solutis-report/src" \
+    RUNLEVEL=3 \
+    TZ=America/Sao_Paulo \
+    LANG=pt_BR.UTF-8 \
+    LC_ALL=pt_BR.UTF-8
+
+WORKDIR /solutis-report
+
+# Install system packages and configure locale & timezone
+RUN export DEBIAN_FRONTEND=noninteractive \
+    && apt-get update -y \
+    && apt-get install -y curl locales tzdata \
     && sed -i '/^# pt_BR.UTF-8 UTF-8/s/^# //' /etc/locale.gen \
     && locale-gen \
     && update-locale LANG=pt_BR.UTF-8 \
+    && ln -snf /usr/share/zoneinfo/$TZ /etc/localtime \
+    && echo $TZ > /etc/timezone
+
+# Cleanup packages to keep the image as small as possible
+RUN chmod -R 755 /var \
+    && apt-get remove curl -y \
+    && apt-get auto-remove -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-ENV LANG=pt_BR.UTF-8
-ENV LC_ALL=pt_BR.UTF-8
+# Copy the virtual environment from builder stage
+COPY --from=builder /solutis-report/.venv /solutis-report/.venv
 
-# Copy dependency files
-COPY pyproject.toml uv.lock README.md /app/
+# Copy application source code
+COPY ./src /solutis-report/src
 
-# Install dependencies using uv
-RUN uv sync --frozen --no-install-project --no-dev
-
-# Copy project source code
-COPY src /app/src
-
-# Create logs directory
-RUN mkdir -p /app/logs
-
-# Expose the application port
+# Expose port 8002
 EXPOSE 8002
 
-# Run the application
-CMD ["uv", "run", "uvicorn", "main:appAPI", "--host", "0.0.0.0", "--port", "8002"]
+# Run application directly using the virtualenv's uvicorn
+CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8002", "--workers", "2"]

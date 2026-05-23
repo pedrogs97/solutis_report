@@ -6,7 +6,7 @@ from typing import Any, Dict, List
 import openpyxl
 from openpyxl.styles import Alignment, Font
 
-from core.abstracts.excel_generator import AbstractExcelGenerator
+from services.excel_generator import AbstractExcelGenerator
 
 
 def format_date_br(value: Any) -> str:

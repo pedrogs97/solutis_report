@@ -3,9 +3,9 @@
 import os
 import tracemalloc
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from loguru import logger
 
 from api.v1.routers.report import report_router
@@ -43,6 +43,16 @@ appAPI.add_middleware(
 )
 
 appAPI.include_router(report_router, prefix="/api/v1")
+
+
+@appAPI.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Global exception handler for unhandled errors."""
+    logger.exception(f"Erro inesperado no servidor: {str(exc)}")
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Erro interno ao processar a requisição."},
+    )
 
 
 @appAPI.get("/", tags=["Service"])
