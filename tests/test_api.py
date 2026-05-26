@@ -4,7 +4,7 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 
 from api.v1.depends.report import get_report_cache, get_report_service
-from main import appAPI
+from main import app
 from services.report_service import ReportService
 
 
@@ -31,18 +31,18 @@ def mock_service():
     service.download_excel.return_value = BytesIO(b"excel_data")
 
     # Override FastAPI dependency
-    appAPI.dependency_overrides[get_report_service] = lambda: service
+    app.dependency_overrides[get_report_service] = lambda: service
 
     yield service
 
     # Clean up override
-    appAPI.dependency_overrides.clear()
+    app.dependency_overrides.clear()
 
 
 @pytest.mark.asyncio
 async def test_generate_report_endpoint(mock_service):
     async with AsyncClient(
-        transport=ASGITransport(app=appAPI), base_url="http://test"
+        transport=ASGITransport(app=app), base_url="http://test"
     ) as ac:
         response = await ac.post(
             "/api/v1/reports/generate",
@@ -62,7 +62,7 @@ async def test_generate_report_endpoint(mock_service):
 @pytest.mark.asyncio
 async def test_generate_report_invalid_type():
     async with AsyncClient(
-        transport=ASGITransport(app=appAPI), base_url="http://test"
+        transport=ASGITransport(app=app), base_url="http://test"
     ) as ac:
         response = await ac.post(
             "/api/v1/reports/generate",
@@ -79,7 +79,7 @@ async def test_generate_report_invalid_type():
 @pytest.mark.asyncio
 async def test_list_report_endpoint(mock_service):
     async with AsyncClient(
-        transport=ASGITransport(app=appAPI), base_url="http://test"
+        transport=ASGITransport(app=app), base_url="http://test"
     ) as ac:
         response = await ac.post(
             "/api/v1/reports/list",
@@ -102,7 +102,7 @@ async def test_list_report_endpoint(mock_service):
 @pytest.mark.asyncio
 async def test_download_report_endpoint(mock_service):
     async with AsyncClient(
-        transport=ASGITransport(app=appAPI), base_url="http://test"
+        transport=ASGITransport(app=app), base_url="http://test"
     ) as ac:
         response = await ac.post(
             "/api/v1/reports/download",

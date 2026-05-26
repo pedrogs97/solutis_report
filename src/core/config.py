@@ -16,6 +16,7 @@ class AppConfig(BaseSettings):
     ORIGINS: List[str] = ["*"]
     VERSION: str = "1.0.0"
     DATABASE_URL: str = "mysql+aiomysql://root:password@localhost/db"
-    BASE_DIR: Path = Path(__file__).parent.parent
+    BASE_DIR: Path = Path(__file__).parent.parent.parent
+    LOG_LEVEL: str = "DEBUG" if DEBUG else "INFO"
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")

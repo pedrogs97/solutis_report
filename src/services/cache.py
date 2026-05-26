@@ -50,7 +50,9 @@ class InMemoryReportCache(AbstractCache):
     def generate_key(self, report_type: str, filters: BaseModel) -> str:
         """Generate md5 hash from report_type + ordered filters."""
         filters_str = json.dumps(
-            filters.model_dump(exclude_none=True), sort_keys=True, ensure_ascii=False
+            filters.model_dump(exclude_none=True, mode="json"),
+            sort_keys=True,
+            ensure_ascii=False,
         )
         raw_key = f"{report_type}:{filters_str}"
         return hashlib.md5(raw_key.encode("utf-8")).hexdigest()
