@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from api.v1.depends.report import get_report_cache, get_report_service
+from api.v1.deps import get_report_cache, get_report_service
 from main import app
 from services.report_service import ReportService
 

@@ -4,7 +4,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Response, status
 
-from api.v1.depends.report import get_report_service
+from api.v1.deps import get_report_service
 from core.errors.exceptions import ReportException
 from schemas.report import (
     ReportGenerateRequest,

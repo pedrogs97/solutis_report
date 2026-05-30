@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse
 from loguru import logger
 
-from api.v1.routers.report import report_router
+from api.v1.routers import report_router
 from core.config import AppConfig
 from core.logging import setup_logger
 
